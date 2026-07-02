@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Ubuntu Notes
+Comment=Write and organise your notes
+Exec=/path/to/ubuntu-notes/run.sh
+Icon=/path/to/ubuntu-notes/assets/logo.png
+Terminal=false
+Type=Application
+Categories=Office;TextEditor;
+Keywords=notes;notepad;text;
+StartupNotify=true
