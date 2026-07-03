@@ -18,10 +18,21 @@ rsync -a --delete \
 
 chmod +x "$INSTALL_DIR/run.sh"
 
-sed \
-  -e "s|^Exec=.*|Exec=$INSTALL_DIR/run.sh|" \
-  -e "s|^Icon=.*|Icon=$INSTALL_DIR/assets/logo.png|" \
-  "$SRC_DIR/ubuntu-notes.desktop" > "$APPLICATIONS_DIR/ubuntu-notes.desktop"
+cat > "$APPLICATIONS_DIR/ubuntu-notes.desktop" <<EOF
+[Desktop Entry]
+Name=Ubuntu Notes
+Comment=Write and organise your notes
+Exec=$INSTALL_DIR/run.sh
+TryExec=$INSTALL_DIR/run.sh
+Icon=$INSTALL_DIR/assets/logo.png
+Terminal=false
+Type=Application
+Categories=Utility;TextEditor;
+Keywords=notes;notepad;text;
+StartupNotify=true
+EOF
+
+chmod 644 "$APPLICATIONS_DIR/ubuntu-notes.desktop"
 
 if command -v update-desktop-database >/dev/null 2>&1; then
   update-desktop-database "$APPLICATIONS_DIR"

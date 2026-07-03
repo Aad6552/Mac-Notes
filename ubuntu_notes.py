@@ -3,8 +3,7 @@
 
 import sys
 import os
-import sqlite3
-from datetime import datetime
+import fcntl
 
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QSplitter, QListWidget,
@@ -12,15 +11,17 @@ from PyQt6.QtWidgets import (
     QLabel, QLineEdit, QFrame, QMessageBox, QMenu, QStackedWidget,
     QColorDialog, QSpinBox, QInputDialog,
 )
-from PyQt6.QtCore import Qt, QSize, QTimer
+from PyQt6.QtCore import Qt, QSize, QTimer, QObject, pyqtSignal
 from PyQt6.QtGui import (
     QFont, QColor, QIcon, QPixmap, QPainter, QPen,
     QTextCharFormat, QTextCursor,
 )
 
+from cloud_sync import CloudSync
+from cloud_accounts_dialog import CloudAccountsDialog
+from notes_db import DB, NOTES_DIR, DB_PATH
+
 # ── Paths ─────────────────────────────────────────────────────────────────────
-NOTES_DIR = os.path.expanduser('~/Notes')
-DB_PATH   = os.path.join(NOTES_DIR, 'notes.db')
 LOGO_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                          'assets', 'logo.png')
 
@@ -67,6 +68,28 @@ QListWidget#folder-list::item {{
 }}
 QListWidget#folder-list::item:hover  {{ background: #3D3438; }}
 QListWidget#folder-list::item:selected {{ background: #4A3C40; color: white; }}
+
+QLabel#cloud-status-label {{
+    color: #B5A8AC;
+    font-size: 11px;
+    padding: 2px 14px 0;
+}}
+QPushButton#cloud-accounts-btn {{
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.14);
+    border-radius: 8px;
+    color: {DARK_FG};
+    font-size: 12px;
+    font-weight: 600;
+    text-align: left;
+    margin: 8px 10px 12px;
+    padding: 8px 10px;
+}}
+QPushButton#cloud-accounts-btn:hover {{
+    background: rgba(255,255,255,0.15);
+    border-color: rgba(255,255,255,0.25);
+}}
+QPushButton#cloud-accounts-btn:pressed {{ background: rgba(255,255,255,0.20); }}
 
 /* ── Search ── */
 QLineEdit#search-entry {{
@@ -177,129 +200,9 @@ QMenu::item.danger   {{ color: #CC3333; }}
 """
 
 
-# ── Database ──────────────────────────────────────────────────────────────────
-class DB:
-    def __init__(self):
-        os.makedirs(NOTES_DIR, exist_ok=True)
-        self.con = sqlite3.connect(DB_PATH, check_same_thread=False)
-        self.con.row_factory = sqlite3.Row
-        self.con.executescript("""
-            CREATE TABLE IF NOT EXISTS folders (
-                id   INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT UNIQUE NOT NULL,
-                ts   TEXT DEFAULT (datetime('now'))
-            );
-            CREATE TABLE IF NOT EXISTS notes (
-                id      INTEGER PRIMARY KEY AUTOINCREMENT,
-                title   TEXT DEFAULT 'New Note',
-                content TEXT DEFAULT '',
-                folder  TEXT DEFAULT 'Notes',
-                created TEXT DEFAULT (datetime('now')),
-                updated TEXT DEFAULT (datetime('now'))
-            );
-            CREATE TABLE IF NOT EXISTS meta (
-                key   TEXT PRIMARY KEY,
-                value TEXT
-            );
-        """)
-        # Seed defaults only the very first time this DB is ever opened, tracked
-        # via meta.seeded — not by checking if folders is currently empty, since
-        # deleting all folders would otherwise make them reappear on next launch.
-        seeded = self.con.execute("SELECT value FROM meta WHERE key='seeded'").fetchone()
-        if not seeded:
-            for f in ('Notes', 'Personal', 'Work'):
-                self.con.execute('INSERT OR IGNORE INTO folders (name) VALUES (?)', (f,))
-            self.con.execute("INSERT INTO meta (key, value) VALUES ('seeded', '1')")
-        self.con.commit()
-
-    def folders(self):
-        rows = self.con.execute('SELECT name FROM folders ORDER BY name').fetchall()
-        out = []
-        for r in rows:
-            n = r['name']
-            c = self.con.execute(
-                'SELECT COUNT(*) c FROM notes WHERE folder=?', (n,)
-            ).fetchone()['c']
-            out.append({'name': n, 'count': c})
-        return out
-
-    def all_count(self):
-        return self.con.execute('SELECT COUNT(*) c FROM notes').fetchone()['c']
-
-    def get_notes(self, folder):
-        if folder == 'all':
-            return self.con.execute(
-                'SELECT * FROM notes ORDER BY updated DESC'
-            ).fetchall()
-        return self.con.execute(
-            'SELECT * FROM notes WHERE folder=? ORDER BY updated DESC', (folder,)
-        ).fetchall()
-
-    def get_note(self, nid):
-        return self.con.execute('SELECT * FROM notes WHERE id=?', (nid,)).fetchone()
-
-    def new_note(self, folder='Notes'):
-        now = datetime.now().isoformat()
-        cur = self.con.execute(
-            'INSERT INTO notes (title,content,folder,created,updated) VALUES (?,?,?,?,?)',
-            ('New Note', '', folder, now, now)
-        )
-        self.con.commit()
-        return dict(self.get_note(cur.lastrowid))
-
-    def save_note(self, nid, content):
-        lines = [l for l in content.split('\n') if l.strip()]
-        title = (lines[0][:120] if lines else '') or 'New Note'
-        self.con.execute(
-            'UPDATE notes SET title=?,content=?,updated=? WHERE id=?',
-            (title, content, datetime.now().isoformat(), nid)
-        )
-        self.con.commit()
-
-    def new_folder(self, name):
-        try:
-            self.con.execute('INSERT INTO folders (name) VALUES (?)', (name,))
-            self.con.commit()
-            return True
-        except sqlite3.IntegrityError:
-            return False  # duplicate name
-
-    def del_note(self, nid):
-        self.con.execute('DELETE FROM notes WHERE id=?', (nid,))
-        self.con.commit()
-
-    def del_folder(self, name):
-        self.con.execute('DELETE FROM notes WHERE folder=?', (name,))
-        self.con.execute('DELETE FROM folders WHERE name=?', (name,))
-        self.con.commit()
-
-    def move_note(self, nid, folder):
-        self.con.execute(
-            'UPDATE notes SET folder=?,updated=? WHERE id=?',
-            (folder, datetime.now().isoformat(), nid)
-        )
-        self.con.commit()
-
-    def search(self, q):
-        return self.con.execute(
-            'SELECT * FROM notes WHERE title LIKE ? OR content LIKE ? ORDER BY updated DESC',
-            (f'%{q}%', f'%{q}%')
-        ).fetchall()
-
-    @staticmethod
-    def fmt_date(iso):
-        if not iso:
-            return ''
-        try:
-            dt = datetime.fromisoformat(iso)
-            n  = datetime.now()
-            if dt.date() == n.date():
-                return dt.strftime('%-I:%M %p')
-            if dt.year == n.year:
-                return dt.strftime('%b %-d')
-            return dt.strftime('%-m/%-d/%y')
-        except Exception:
-            return ''
+# ── Cross-thread signal for cloud sync results ────────────────────────────────
+class SyncSignal(QObject):
+    finished = pyqtSignal()
 
 
 # ── Note list row widget ──────────────────────────────────────────────────────
@@ -368,6 +271,22 @@ class MainWindow(QMainWindow):
         self._save_timer = QTimer(self)
         self._save_timer.setSingleShot(True)
         self._save_timer.timeout.connect(self._do_save)
+
+        # Cloud backup: pushes notes.db to Proton Drive / Google Drive /
+        # OneDrive via rclone, whichever the user is signed in to.
+        self.cloud = CloudSync(DB_PATH)
+        self._sync_signal = SyncSignal()
+        self._sync_signal.finished.connect(self._on_cloud_sync_done)
+
+        self._cloud_timer = QTimer(self)
+        self._cloud_timer.timeout.connect(self._trigger_cloud_sync)
+        self._cloud_timer.start(3 * 60 * 1000)  # every 3 minutes
+
+        self._cloud_debounce_timer = QTimer(self)  # fires a bit after typing settles
+        self._cloud_debounce_timer.setSingleShot(True)
+        self._cloud_debounce_timer.timeout.connect(self._trigger_cloud_sync)
+
+        QTimer.singleShot(5000, self._trigger_cloud_sync)  # + once shortly after launch
 
         self.setWindowTitle('Ubuntu Notes')
         self.resize(1160, 760)
@@ -471,7 +390,18 @@ class MainWindow(QMainWindow):
         self.folder_list.currentRowChanged.connect(self._on_folder_changed)
         self.folder_list.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.folder_list.customContextMenuRequested.connect(self._on_folder_context)
-        lay.addWidget(self.folder_list)
+        lay.addWidget(self.folder_list, 1)  # stretch factor: eats extra space, not the footer below
+
+        self.cloud_status_lbl = QLabel('')
+        self.cloud_status_lbl.setObjectName('cloud-status-label')
+        self.cloud_status_lbl.setWordWrap(True)
+        lay.addWidget(self.cloud_status_lbl)
+
+        cloud_accounts_btn = QPushButton('☁  Manage Cloud Accounts…')
+        cloud_accounts_btn.setObjectName('cloud-accounts-btn')
+        cloud_accounts_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        cloud_accounts_btn.clicked.connect(self._open_cloud_accounts)
+        lay.addWidget(cloud_accounts_btn)
 
         return sb
 
@@ -732,10 +662,32 @@ class MainWindow(QMainWindow):
         self.db.save_note(self.current_note_id, self.editor.toPlainText())
         self._fill_notes()
         self._fill_sidebar()
+        # Don't restart if already pending — otherwise continuous typing would
+        # keep pushing this back forever and notes.db would never sync.
+        if not self._cloud_debounce_timer.isActive():
+            self._cloud_debounce_timer.start(10000)
 
     def _flush(self):
         self._save_timer.stop()
         self._do_save()
+
+    # ── Cloud backup ──────────────────────────────────────────────────────────
+    def _open_cloud_accounts(self):
+        dlg = CloudAccountsDialog(self, on_change=self._trigger_cloud_sync)
+        dlg.exec()
+
+    def _trigger_cloud_sync(self):
+        self.cloud.sync_all_async(on_done=self._sync_signal.finished.emit)
+
+    def _on_cloud_sync_done(self):
+        if not self.cloud.status:
+            self.cloud_status_lbl.setText('')
+            return
+        parts = []
+        for label, info in sorted(self.cloud.status.items()):
+            mark = '✓' if info['ok'] else '✕'
+            parts.append(f"☁ {label} {mark} {info['when']}")
+        self.cloud_status_lbl.setText('\n'.join(parts))
 
     # ── Toolbar state ─────────────────────────────────────────────────────────
     def _update_toolbar(self):
@@ -999,10 +951,30 @@ class MainWindow(QMainWindow):
 
     def closeEvent(self, ev):
         self._flush()
+        # Bounded wait so the last edits reach the cloud before the process
+        # exits and takes any in-flight background sync down with it.
+        self.cloud.sync_all_and_wait(timeout=8)
         ev.accept()
 
 
 # ── Entry point ───────────────────────────────────────────────────────────────
+_lock_file = None  # kept open for the process lifetime — closing it releases the lock
+
+
+def _acquire_single_instance_lock():
+    """Refuse to start a second copy: two instances writing notes.db at once
+    risks corruption, and a second "Connect" while one is mid sign-in fails
+    with a confusing port-already-in-use error instead of a clear message."""
+    global _lock_file
+    os.makedirs(NOTES_DIR, exist_ok=True)
+    _lock_file = open(os.path.join(NOTES_DIR, '.ubuntu-notes.lock'), 'w')
+    try:
+        fcntl.flock(_lock_file, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        return True
+    except OSError:
+        return False
+
+
 def main():
     app = QApplication(sys.argv)
     app.setApplicationName('Ubuntu Notes')
@@ -1011,6 +983,15 @@ def main():
     logo_pix = QPixmap(LOGO_PATH)
     if not logo_pix.isNull():
         app.setWindowIcon(QIcon(logo_pix))
+
+    if not _acquire_single_instance_lock():
+        QMessageBox.warning(
+            None, 'Ubuntu Notes',
+            'Ubuntu Notes is already running.\n\n'
+            'Check your other windows/Activities — a second copy '
+            "can't safely share the same notes.",
+        )
+        sys.exit(1)
 
     db  = DB()
     win = MainWindow(db)
