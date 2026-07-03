@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Bumps the app version, commits everything pending, tags the release,
-# pushes to GitHub, and refreshes the local install.
+# and pushes to GitHub.
 #
 # Usage: bin/release.sh [major|minor|patch]   (defaults to patch)
 set -e
@@ -41,5 +41,3 @@ git push origin HEAD
 git push origin "v${new_version}"
 
 echo "Released v${new_version}"
-
-./install.sh
