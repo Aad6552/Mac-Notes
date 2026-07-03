@@ -13,8 +13,8 @@ SQLite database.
 ## Quick start
 
 ```bash
-git clone <this-repo> ubuntu-notes-1.0
-cd ubuntu-notes-1.0
+git clone <this-repo> ubuntu-notes
+cd ubuntu-notes
 ./run.sh
 ```
 

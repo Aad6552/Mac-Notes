@@ -1,9 +1,9 @@
 [Desktop Entry]
 Name=Ubuntu Notes
 Comment=Write and organise your notes
-Exec=Path/To/ubuntu-notes-1.0/run.sh
-TryExec=Path/To/ubuntu-notes-1.0/run.sh
-Icon=Path/To/ubuntu-notes-1.0/assets/logo.png
+Exec=Path/To/ubuntu-notes/run.sh
+TryExec=Path/To/ubuntu-notes/run.sh
+Icon=Path/To/ubuntu-notes/assets/logo.png
 Terminal=false
 Type=Application
 Categories=Utility;TextEditor;

@@ -24,6 +24,13 @@ from notes_db import DB, NOTES_DIR, DB_PATH
 # ── Paths ─────────────────────────────────────────────────────────────────────
 LOGO_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                          'assets', 'logo.png')
+VERSION_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'VERSION')
+
+try:
+    with open(VERSION_PATH) as f:
+        APP_VERSION = f.read().strip()
+except OSError:
+    APP_VERSION = ''
 
 # ── Colours ───────────────────────────────────────────────────────────────────
 ORANGE    = '#E95420'
@@ -45,6 +52,10 @@ QLabel#brand-name {{
     color: white;
     font-size: 15px;
     font-weight: bold;
+}}
+QLabel#brand-version {{
+    color: #9A8A8F;
+    font-size: 10px;
 }}
 QLabel#section-label {{
     color: #5A4A4F;
@@ -288,7 +299,7 @@ class MainWindow(QMainWindow):
 
         QTimer.singleShot(5000, self._trigger_cloud_sync)  # + once shortly after launch
 
-        self.setWindowTitle('Ubuntu Notes')
+        self.setWindowTitle(f'Ubuntu Notes v{APP_VERSION}' if APP_VERSION else 'Ubuntu Notes')
         self.resize(1160, 760)
 
         logo_pix = QPixmap(LOGO_PATH)
@@ -344,9 +355,17 @@ class MainWindow(QMainWindow):
         logo_lbl.setFixedSize(52, 52)
         bl.addWidget(logo_lbl)
 
+        name_col = QVBoxLayout()
+        name_col.setContentsMargins(0, 0, 0, 0)
+        name_col.setSpacing(0)
         name = QLabel('Ubuntu Notes')
         name.setObjectName('brand-name')
-        bl.addWidget(name)
+        name_col.addWidget(name)
+        if APP_VERSION:
+            version_lbl = QLabel(f'v{APP_VERSION}')
+            version_lbl.setObjectName('brand-version')
+            name_col.addWidget(version_lbl)
+        bl.addLayout(name_col)
         bl.addStretch()
         lay.addWidget(brand)
 
