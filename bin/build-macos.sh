@@ -53,6 +53,7 @@ iconutil -c icns "$ICONSET" -o "$BUILD_DIR/AppIcon.icns"
 pyinstaller --noconfirm --clean --onefile --windowed \
   --name "$APP_NAME" \
   --icon "$(pwd)/$BUILD_DIR/AppIcon.icns" \
+  --osx-bundle-identifier "com.macnotes.app" \
   --distpath "$DIST_DIR" \
   --workpath "$BUILD_DIR/work" \
   --specpath "$BUILD_DIR/work" \

@@ -1,4 +1,4 @@
-/* Ubuntu Notes — Frontend */
+/* Mac Notes — Frontend */
 (() => {
   'use strict';
 

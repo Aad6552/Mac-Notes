@@ -1,11 +1,10 @@
-@import url('https://fonts.googleapis.com/css2?family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,400&display=swap');
 
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
 :root {
-  --ubuntu-orange: #E95420;
-  --ubuntu-orange-dark: #C7420F;
-  --ubuntu-orange-light: #F7956B;
+  --accent-orange: #E95420;
+  --accent-orange-dark: #C7420F;
+  --accent-orange-light: #F7956B;
   --sidebar-bg: #2C2427;
   --sidebar-hover: #3D3438;
   --sidebar-active: #4A3C40;
@@ -16,7 +15,7 @@
   --list-border: #E0E0E0;
   --list-hover: #EBEBEB;
   --list-active-bg: #FFFFFF;
-  --list-active-border: var(--ubuntu-orange);
+  --list-active-border: var(--accent-orange);
   --editor-bg: #FFFEF5;
   --editor-line: #EEE8D5;
   --text-primary: #1A1A1A;
@@ -30,7 +29,7 @@
 
 html, body {
   height: 100%;
-  font-family: 'Ubuntu', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
   background: #1A1A1A;
   color: var(--text-primary);
   overflow: hidden;
@@ -130,7 +129,7 @@ html, body {
   padding: 6px 10px 6px 30px;
   font-size: 13px;
   color: #fff;
-  font-family: 'Ubuntu', sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
   outline: none;
   transition: background 0.15s;
 }
@@ -175,7 +174,7 @@ html, body {
 }
 .folder-item:hover { background: var(--sidebar-hover); }
 .folder-item.active { background: var(--sidebar-active); color: #fff; }
-.folder-item.active .folder-icon { color: var(--ubuntu-orange); }
+.folder-item.active .folder-icon { color: var(--accent-orange); }
 .folder-icon {
   font-size: 14px;
   width: 18px;
@@ -207,7 +206,7 @@ html, body {
   border-radius: 8px;
   color: var(--sidebar-muted);
   font-size: 12px;
-  font-family: 'Ubuntu', sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -248,7 +247,7 @@ html, body {
 .btn-new-note {
   width: 30px;
   height: 30px;
-  background: var(--ubuntu-orange);
+  background: var(--accent-orange);
   border: none;
   border-radius: 8px;
   color: white;
@@ -261,7 +260,7 @@ html, body {
   transition: background 0.15s;
   flex-shrink: 0;
 }
-.btn-new-note:hover { background: var(--ubuntu-orange-dark); }
+.btn-new-note:hover { background: var(--accent-orange-dark); }
 
 .sort-bar {
   padding: 6px 16px 8px;
@@ -277,7 +276,7 @@ html, body {
   background: transparent;
   border: none;
   outline: none;
-  font-family: 'Ubuntu', sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
   cursor: pointer;
 }
 
@@ -299,7 +298,7 @@ html, body {
 .note-item:hover { background: var(--list-hover); }
 .note-item.active {
   background: var(--list-active-bg);
-  border-left-color: var(--ubuntu-orange);
+  border-left-color: var(--accent-orange);
   box-shadow: inset 0 0 0 0 transparent, var(--shadow);
 }
 .note-item-title {
@@ -311,7 +310,7 @@ html, body {
   text-overflow: ellipsis;
   margin-bottom: 3px;
 }
-.note-item.active .note-item-title { color: var(--ubuntu-orange); }
+.note-item.active .note-item-title { color: var(--accent-orange); }
 .note-item-meta {
   display: flex;
   align-items: center;
@@ -326,7 +325,7 @@ html, body {
 .note-item-folder-badge {
   font-size: 10px;
   color: #fff;
-  background: var(--ubuntu-orange);
+  background: var(--accent-orange);
   border-radius: 4px;
   padding: 1px 5px;
   opacity: 0.8;
@@ -400,7 +399,7 @@ html, body {
   font-family: inherit;
 }
 .toolbar-btn:hover { background: #F0F0F0; color: #111; }
-.toolbar-btn.active { background: var(--ubuntu-orange); color: #fff; }
+.toolbar-btn.active { background: var(--accent-orange); color: #fff; }
 .toolbar-btn svg { width: 14px; height: 14px; fill: currentColor; }
 
 .toolbar-spacer { flex: 1; }
@@ -420,11 +419,11 @@ html, body {
 }
 .note-info-folder select {
   font-size: 11px;
-  color: var(--ubuntu-orange);
+  color: var(--accent-orange);
   background: transparent;
   border: none;
   outline: none;
-  font-family: 'Ubuntu', sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
   cursor: pointer;
 }
 
@@ -451,13 +450,13 @@ html, body {
 .editor-content {
   min-height: calc(100vh - 200px);
   outline: none;
-  font-family: 'Ubuntu', -apple-system, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
   font-size: 15px;
   line-height: 28px;
   color: var(--text-primary);
   white-space: pre-wrap;
   word-break: break-word;
-  caret-color: var(--ubuntu-orange);
+  caret-color: var(--accent-orange);
 }
 .editor-content:empty::before {
   content: 'Start writing…';
@@ -513,16 +512,16 @@ html, body {
   border: 1.5px solid #E0E0E0;
   border-radius: 8px;
   font-size: 14px;
-  font-family: 'Ubuntu', sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
   outline: none;
   transition: border-color 0.15s;
   margin-bottom: 14px;
 }
-.modal input[type="text"]:focus { border-color: var(--ubuntu-orange); }
+.modal input[type="text"]:focus { border-color: var(--accent-orange); }
 .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
-.btn { padding: 7px 16px; border-radius: 8px; font-size: 13px; font-family: 'Ubuntu', sans-serif; cursor: pointer; border: none; font-weight: 500; transition: all 0.15s; }
-.btn-primary { background: var(--ubuntu-orange); color: #fff; }
-.btn-primary:hover { background: var(--ubuntu-orange-dark); }
+.btn { padding: 7px 16px; border-radius: 8px; font-size: 13px; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif; cursor: pointer; border: none; font-weight: 500; transition: all 0.15s; }
+.btn-primary { background: var(--accent-orange); color: #fff; }
+.btn-primary:hover { background: var(--accent-orange-dark); }
 .btn-secondary { background: #F0F0F0; color: #555; }
 .btn-secondary:hover { background: #E5E5E5; }
 
@@ -556,7 +555,7 @@ html, body {
 /* ─── SEARCH RESULTS ─── */
 .search-badge {
   display: inline-block;
-  background: var(--ubuntu-orange);
+  background: var(--accent-orange);
   color: white;
   font-size: 10px;
   padding: 1px 6px;
