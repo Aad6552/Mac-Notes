@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Ubuntu Notes — Native desktop app (PyQt6)"""
+"""Mac Notes — Native desktop app (PyQt6)"""
 
 import sys
 import os
@@ -169,7 +169,7 @@ QTextEdit#note-editor {{
     background: {EDITOR_BG};
     border: none;
     color: #1A1A1A;
-    font-family: Ubuntu, "Noto Sans", sans-serif;
+    font-family: "Helvetica Neue", Helvetica, sans-serif;
     font-size: 14pt;
     padding: 0;
     selection-background-color: #FBD0C0;
@@ -299,7 +299,7 @@ class MainWindow(QMainWindow):
 
         QTimer.singleShot(5000, self._trigger_cloud_sync)  # + once shortly after launch
 
-        self.setWindowTitle(f'Ubuntu Notes v{APP_VERSION}' if APP_VERSION else 'Ubuntu Notes')
+        self.setWindowTitle(f'Mac Notes v{APP_VERSION}' if APP_VERSION else 'Mac Notes')
         self.resize(1160, 760)
 
         logo_pix = QPixmap(LOGO_PATH)
@@ -358,7 +358,7 @@ class MainWindow(QMainWindow):
         name_col = QVBoxLayout()
         name_col.setContentsMargins(0, 0, 0, 0)
         name_col.setSpacing(0)
-        name = QLabel('Ubuntu Notes')
+        name = QLabel('Mac Notes')
         name.setObjectName('brand-name')
         name_col.addWidget(name)
         if APP_VERSION:
@@ -986,7 +986,7 @@ def _acquire_single_instance_lock():
     with a confusing port-already-in-use error instead of a clear message."""
     global _lock_file
     os.makedirs(NOTES_DIR, exist_ok=True)
-    _lock_file = open(os.path.join(NOTES_DIR, '.ubuntu-notes.lock'), 'w')
+    _lock_file = open(os.path.join(NOTES_DIR, '.mac-notes.lock'), 'w')
     try:
         fcntl.flock(_lock_file, fcntl.LOCK_EX | fcntl.LOCK_NB)
         return True
@@ -996,7 +996,7 @@ def _acquire_single_instance_lock():
 
 def main():
     app = QApplication(sys.argv)
-    app.setApplicationName('Ubuntu Notes')
+    app.setApplicationName('Mac Notes')
     app.setStyleSheet(STYLE)
 
     logo_pix = QPixmap(LOGO_PATH)
@@ -1005,8 +1005,8 @@ def main():
 
     if not _acquire_single_instance_lock():
         QMessageBox.warning(
-            None, 'Ubuntu Notes',
-            'Ubuntu Notes is already running.\n\n'
+            None, 'Mac Notes',
+            'Mac Notes is already running.\n\n'
             'Check your other windows/Activities — a second copy '
             "can't safely share the same notes.",
         )

@@ -35,7 +35,7 @@ class CloudAccountsDialog(QDialog):
 
         lay = QVBoxLayout(self)
         title = QLabel(
-            'Sign in and Ubuntu Notes backs up automatically to a '
+            'Sign in and Mac Notes backs up automatically to a '
             '"notes" folder on each drive.'
         )
         title.setWordWrap(True)

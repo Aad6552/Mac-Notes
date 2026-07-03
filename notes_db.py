@@ -1,6 +1,6 @@
-"""Shared SQLite storage for Ubuntu Notes.
+"""Shared SQLite storage for Mac Notes.
 
-Used by both the PyQt6 desktop app (ubuntu_notes.py) and the REST API
+Used by both the PyQt6 desktop app (mac_notes.py) and the REST API
 (app.py) so they read and write the same ~/Notes/notes.db, with no Qt
 dependency here.
 """

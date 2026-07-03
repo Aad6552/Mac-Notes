@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# Ubuntu Notes — native desktop app launcher
+# Mac Notes — native desktop app launcher
 set -e
 cd "$(dirname "$0")"
 
 # Create venv if missing
 if [ ! -d ".venv" ]; then
   echo "Setting up environment (first run only)…"
-  python3 -m venv .venv --system-site-packages
+  python3 -m venv .venv
 fi
 
 source .venv/bin/activate
@@ -17,4 +17,4 @@ python3 -c "from PyQt6 import QtWidgets" 2>/dev/null || {
   pip install --quiet PyQt6
 }
 
-python3 ubuntu_notes.py
+python3 mac_notes.py

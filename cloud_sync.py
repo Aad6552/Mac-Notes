@@ -1,4 +1,4 @@
-"""Background cloud backup for Ubuntu Notes.
+"""Background cloud backup for Mac Notes.
 
 Uses whatever rclone remotes the user has configured (`rclone config`) to
 copy notes.db to Proton Drive and/or Microsoft OneDrive. Remotes are
