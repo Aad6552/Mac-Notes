@@ -1,9 +1,9 @@
 """Background cloud backup for Mac Notes.
 
 Uses whatever rclone remotes the user has configured (`rclone config`) to
-copy notes.db to Proton Drive, Microsoft OneDrive, and/or Google Drive.
-Remotes are matched by *type*, not name, so this keeps working no matter
-what the user called them.
+copy notes.db to Proton Drive, Microsoft OneDrive, Google Drive, and/or
+Dropbox. Remotes are matched by *type*, not name, so this keeps working no
+matter what the user called them.
 
 Alongside notes.db, every note is also exported as a plain-text file under
 a folder layout that mirrors the app's own folders (e.g. a "Work" folder
@@ -31,6 +31,7 @@ REMOTE_TYPES = {
     'protondrive': 'Proton Drive',
     'onedrive': 'Microsoft OneDrive',
     'drive': 'Google Drive',
+    'dropbox': 'Dropbox',
 }
 
 RCLONE_PER_REMOTE_TIMEOUT = 60  # seconds — Proton Drive's handshake can be slow

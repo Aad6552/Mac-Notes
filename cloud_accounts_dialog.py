@@ -1,4 +1,4 @@
-"""Sign-in dialog for Proton Drive / Microsoft OneDrive / Google Drive."""
+"""Sign-in dialog for Proton Drive / Microsoft OneDrive / Google Drive / Dropbox."""
 
 import threading
 

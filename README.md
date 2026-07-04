@@ -81,12 +81,13 @@ app and choose "Open" to get past Gatekeeper's warning.
 ## Cloud backup
 
 Mac Notes can back up `notes.db` to **Proton Drive**, **Microsoft
-OneDrive**, and/or **Google Drive**. Click **☁ Manage Cloud Accounts…** at
-the bottom of the sidebar to sign in:
+OneDrive**, **Google Drive**, and/or **Dropbox**. Click **☁ Manage Cloud
+Accounts…** at the bottom of the sidebar to sign in:
 
-- **OneDrive** / **Google Drive** — click Connect, your browser opens
-  straight to the provider's own login page. Nothing passes through the
-  app; it just picks up the resulting token once you approve access.
+- **OneDrive** / **Google Drive** / **Dropbox** — click Connect, your
+  browser opens straight to the provider's own login page. Nothing passes
+  through the app; it just picks up the resulting token once you approve
+  access.
 - **Proton Drive** — click Connect and enter your email, password, and (if
   enabled) 2FA code in the form that appears.
 - Click **Disconnect** any time to stop backing up to that drive and
@@ -114,7 +115,7 @@ in-app dialog — either way ends up creating the same kind of rclone remote.
 ```
 mac_notes.py             Main PyQt6 application (this is what run.sh launches)
 notes_db.py              Shared SQLite layer (~/Notes/notes.db) used by the app and the API
-cloud_sync.py            Background rclone backup to Proton Drive/OneDrive/Google Drive
+cloud_sync.py            Background rclone backup to Proton Drive/OneDrive/Google Drive/Dropbox
 cloud_login.py           In-app sign-in — creates the rclone remotes cloud_sync.py uses
 cloud_accounts_dialog.py "Manage Cloud Accounts" dialog (PyQt6)
 run.sh                   Sets up the venv and starts the app

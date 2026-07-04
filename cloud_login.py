@@ -1,11 +1,11 @@
-"""In-app sign-in for Proton Drive / Microsoft OneDrive / Google Drive.
+"""In-app sign-in for Proton Drive / Microsoft OneDrive / Google Drive / Dropbox.
 
 Wires credentials into rclone remotes so cloud_sync.py can back up to them.
-For OneDrive and Google Drive this runs `rclone authorize`, which opens the
-user's browser straight to the provider's own login page — no password or
-token ever passes through this app. For Proton Drive (no browser OAuth in
-rclone), it takes an email/password/2FA form and hands it to
-`rclone config create` directly.
+For OneDrive, Google Drive, and Dropbox this runs `rclone authorize`, which
+opens the user's browser straight to the provider's own login page — no
+password or token ever passes through this app. For Proton Drive (no
+browser OAuth in rclone), it takes an email/password/2FA form and hands it
+to `rclone config create` directly.
 """
 
 import json
@@ -17,9 +17,11 @@ from cloud_sync import REMOTE_TYPES, REMOTE_SUBDIR
 
 PROVIDER_TYPES = [('protondrive', REMOTE_TYPES['protondrive']),
                    ('onedrive', REMOTE_TYPES['onedrive']),
-                   ('drive', REMOTE_TYPES['drive'])]
+                   ('drive', REMOTE_TYPES['drive']),
+                   ('dropbox', REMOTE_TYPES['dropbox'])]
 
-DEFAULT_REMOTE_NAMES = {'protondrive': 'proton', 'onedrive': 'onedrive', 'drive': 'gdrive'}
+DEFAULT_REMOTE_NAMES = {'protondrive': 'proton', 'onedrive': 'onedrive',
+                         'drive': 'gdrive', 'dropbox': 'dropbox'}
 OAUTH_TIMEOUT = 300  # seconds allowed to complete the browser login
 
 
