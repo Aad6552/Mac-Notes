@@ -5,15 +5,26 @@ copy notes.db to Proton Drive, Microsoft OneDrive, and/or Google Drive.
 Remotes are matched by *type*, not name, so this keeps working no matter
 what the user called them.
 
+Alongside notes.db, every note is also exported as a plain-text file under
+a folder layout that mirrors the app's own folders (e.g. a "Work" folder
+in the app becomes a "Work" folder on the drive holding its notes). Notes
+whose folder no longer exists — or all notes, if the app has no folders at
+all — land in a catch-all "All Notes" folder instead.
+
 If a remote isn't configured, or the user isn't currently logged in to it
 (expired token, offline, etc.), that remote is silently skipped — this is
 best-effort backup, not a requirement for the app to function.
 """
 
 import os
+import re
+import shutil
+import sqlite3
 import subprocess
+import tempfile
 import threading
 import time
+from urllib.parse import quote
 
 REMOTE_TYPES = {
     'protondrive': 'Proton Drive',
@@ -23,6 +34,8 @@ REMOTE_TYPES = {
 
 RCLONE_PER_REMOTE_TIMEOUT = 60  # seconds — Proton Drive's handshake can be slow
 REMOTE_SUBDIR = 'notes'
+EXPORT_SUBDIR = 'folders'  # per-folder note exports, alongside notes.db
+ALL_NOTES_FOLDER = 'All Notes'
 
 
 class CloudSync:
@@ -42,13 +55,17 @@ class CloudSync:
         thread.start()
 
     def _sync_all(self, on_done):
+        export_dir = None
         try:
             if not os.path.exists(self.db_path):
                 return
+            export_dir = self._export_notes_by_folder()
             for name, label in self._discover_remotes():
-                ok = self._sync_one(name)
+                ok = self._sync_one(name, export_dir)
                 self.status[label] = {'ok': ok, 'when': time.strftime('%H:%M')}
         finally:
+            if export_dir:
+                shutil.rmtree(export_dir, ignore_errors=True)
             self._lock.release()
             if on_done:
                 on_done()
@@ -75,7 +92,36 @@ class CloudSync:
                 remotes.append((name.rstrip(':'), label))
         return remotes
 
-    def _sync_one(self, remote_name):
+    def _export_notes_by_folder(self):
+        """Write every note out as a .txt file under a temp dir laid out as
+        <folder>/<note>.txt, mirroring the app's own folders. Notes whose
+        folder doesn't exist (or every note, if there are no folders at
+        all) go under ALL_NOTES_FOLDER instead."""
+        tmp_dir = tempfile.mkdtemp(prefix='notes-export-')
+        try:
+            con = sqlite3.connect(f'file:{quote(self.db_path)}?mode=ro', uri=True)
+            con.row_factory = sqlite3.Row
+            folder_names = {r['name'] for r in con.execute('SELECT name FROM folders')}
+            notes = con.execute('SELECT id, title, content, folder FROM notes').fetchall()
+            con.close()
+        except sqlite3.Error:
+            return tmp_dir
+
+        for note in notes:
+            folder = note['folder'] if note['folder'] in folder_names else ALL_NOTES_FOLDER
+            folder_dir = os.path.join(tmp_dir, self._safe_name(folder))
+            os.makedirs(folder_dir, exist_ok=True)
+            filename = f"{note['id']:04d} - {self._safe_name(note['title'] or 'New Note')}.txt"
+            with open(os.path.join(folder_dir, filename), 'w', encoding='utf-8') as f:
+                f.write(note['content'] or '')
+        return tmp_dir
+
+    @staticmethod
+    def _safe_name(name):
+        name = re.sub(r'[\\/:*?"<>|\x00-\x1f]', '-', name).strip(' .')
+        return name[:120] or 'untitled'
+
+    def _sync_one(self, remote_name, export_dir):
         dest = f'{remote_name}:{REMOTE_SUBDIR}/notes.db'
         try:
             # Recreate the "notes" folder if it's been deleted/renamed on the
@@ -90,6 +136,14 @@ class CloudSync:
                 capture_output=True, text=True,
                 timeout=RCLONE_PER_REMOTE_TIMEOUT,
             )
-            return result.returncode == 0
+            if result.returncode != 0:
+                return False
+            folders_result = subprocess.run(
+                ['rclone', 'sync', export_dir,
+                 f'{remote_name}:{REMOTE_SUBDIR}/{EXPORT_SUBDIR}', '--timeout', '45s'],
+                capture_output=True, text=True,
+                timeout=RCLONE_PER_REMOTE_TIMEOUT,
+            )
+            return folders_result.returncode == 0
         except subprocess.TimeoutExpired:
             return False

@@ -97,7 +97,11 @@ source without the installer, get it yourself with `brew install rclone`.
   seconds in the background, and once more on quit.
 - If you're logged out or offline, that drive is silently skipped —
   best-effort backup, not a requirement to use the app.
-- Files land in a `notes/notes.db` folder on each connected drive.
+- Files land in a `notes` folder on each connected drive: `notes.db` plus a
+  `notes/folders` folder containing every note as a plain-text file, sorted
+  into subfolders that mirror the app's own folders (notes without a
+  matching folder — or all notes, if you have no folders — land in an
+  `All Notes` subfolder).
 - Status shows at the bottom of the sidebar, e.g. `☁ Proton Drive ✓ 14:32`.
 
 You can also do this from the terminal with `rclone config` instead of the
