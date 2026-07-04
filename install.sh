@@ -17,11 +17,10 @@ VERSION="$(tr -d '[:space:]' < "$SRC_DIR/VERSION" 2>/dev/null || echo "1.0.0")"
 
 # --- rclone (used for cloud backup) -----------------------------------------
 if ! command -v rclone >/dev/null 2>&1; then
-  if command -v brew >/dev/null 2>&1; then
-    echo "Installing rclone..."
-    sudo -v ; curl https://rclone.org/install.sh | sudo bash
-  else
-    echo "Warning: rclone cant be downloaded" >&2
+  echo "Installing rclone..."
+  sudo -v
+  if ! curl https://rclone.org/install.sh | sudo bash; then
+    echo "Warning: rclone install failed" >&2
     echo "Cloud backup will be unavailable until you install rclone yourself" >&2
     echo "(see https://rclone.org/downloads/)." >&2
   fi
