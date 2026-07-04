@@ -4,6 +4,7 @@
 import sys
 import os
 import fcntl
+import subprocess
 
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QSplitter, QListWidget,
@@ -20,11 +21,14 @@ from PyQt6.QtGui import (
 from cloud_sync import CloudSync
 from cloud_accounts_dialog import CloudAccountsDialog
 from notes_db import DB, NOTES_DIR, DB_PATH
+from update_check import UpdateSignal, check_for_update_async
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
 LOGO_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                          'assets', 'logo.png')
 VERSION_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'VERSION')
+GET_LATEST_RELEASE_SCRIPT = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), 'bin', 'get-latest-release.sh')
 
 try:
     with open(VERSION_PATH) as f:
@@ -298,6 +302,10 @@ class MainWindow(QMainWindow):
         self._cloud_debounce_timer.timeout.connect(self._trigger_cloud_sync)
 
         QTimer.singleShot(5000, self._trigger_cloud_sync)  # + once shortly after launch
+
+        self._update_signal = UpdateSignal()
+        self._update_signal.available.connect(self._on_update_available)
+        QTimer.singleShot(4000, self._check_for_updates)
 
         self.setWindowTitle(f'Mac Notes v{APP_VERSION}' if APP_VERSION else 'Mac Notes')
         self.resize(1160, 760)
@@ -707,6 +715,32 @@ class MainWindow(QMainWindow):
             mark = '✓' if info['ok'] else '✕'
             parts.append(f"☁ {label} {mark} {info['when']}")
         self.cloud_status_lbl.setText('\n'.join(parts))
+
+    # ── App updates ───────────────────────────────────────────────────────────
+    def _check_for_updates(self):
+        check_for_update_async(APP_VERSION, on_available=self._update_signal.available.emit)
+
+    def _on_update_available(self, latest_version):
+        box = QMessageBox(self)
+        box.setWindowTitle('Update Available')
+        box.setText(
+            f'A new version of Mac Notes is available: v{latest_version}\n'
+            f'(you have v{APP_VERSION}).'
+        )
+        update_btn = box.addButton('Update', QMessageBox.ButtonRole.AcceptRole)
+        box.addButton('Not Now', QMessageBox.ButtonRole.RejectRole)
+        box.exec()
+        if box.clickedButton() is update_btn:
+            self._run_update()
+
+    def _run_update(self):
+        subprocess.Popen(['bash', GET_LATEST_RELEASE_SCRIPT])
+        QMessageBox.information(
+            self, 'Updating',
+            'Mac Notes is downloading the update and will now close.\n'
+            'Reopen it once the update finishes.',
+        )
+        QApplication.quit()
 
     # ── Toolbar state ─────────────────────────────────────────────────────────
     def _update_toolbar(self):
