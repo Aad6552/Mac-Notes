@@ -21,7 +21,11 @@ The first run creates a local virtual environment in `.venv/` and installs
 PyQt6 into it automatically. Subsequent runs just launch the app.
 
 Your notes are stored in `~/Notes/notes.db` (SQLite), independent of where
-you check out this repo.
+you check out this repo. Every note is also kept as a plain-text file under
+`~/Notes/folders`, laid out to mirror the app's own folders (e.g. a "Work"
+folder in the app becomes a "Work" folder there), so you can read your
+notes without the app or a SQLite viewer. Notes without a matching folder —
+or all notes, if you have none — land in `~/Notes/folders/All Notes`.
 
 ## Installing as a desktop app
 
@@ -98,10 +102,8 @@ source without the installer, get it yourself with `brew install rclone`.
 - If you're logged out or offline, that drive is silently skipped —
   best-effort backup, not a requirement to use the app.
 - Files land in a `notes` folder on each connected drive: `notes.db` plus a
-  `notes/folders` folder containing every note as a plain-text file, sorted
-  into subfolders that mirror the app's own folders (notes without a
-  matching folder — or all notes, if you have no folders — land in an
-  `All Notes` subfolder).
+  `notes/folders` folder that mirrors the local `~/Notes/folders` export
+  described above.
 - Status shows at the bottom of the sidebar, e.g. `☁ Proton Drive ✓ 14:32`.
 
 You can also do this from the terminal with `rclone config` instead of the

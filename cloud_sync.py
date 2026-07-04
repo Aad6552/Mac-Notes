@@ -9,7 +9,9 @@ Alongside notes.db, every note is also exported as a plain-text file under
 a folder layout that mirrors the app's own folders (e.g. a "Work" folder
 in the app becomes a "Work" folder on the drive holding its notes). Notes
 whose folder no longer exists — or all notes, if the app has no folders at
-all — land in a catch-all "All Notes" folder instead.
+all — land in a catch-all "All Notes" folder instead. This export lives
+locally at ~/Notes/folders (regenerated on every pass) and is then pushed
+out to each connected cloud remote as-is.
 
 If a remote isn't configured, or the user isn't currently logged in to it
 (expired token, offline, etc.), that remote is silently skipped — this is
@@ -21,7 +23,6 @@ import re
 import shutil
 import sqlite3
 import subprocess
-import tempfile
 import threading
 import time
 from urllib.parse import quote
@@ -55,7 +56,6 @@ class CloudSync:
         thread.start()
 
     def _sync_all(self, on_done):
-        export_dir = None
         try:
             if not os.path.exists(self.db_path):
                 return
@@ -64,8 +64,6 @@ class CloudSync:
                 ok = self._sync_one(name, export_dir)
                 self.status[label] = {'ok': ok, 'when': time.strftime('%H:%M')}
         finally:
-            if export_dir:
-                shutil.rmtree(export_dir, ignore_errors=True)
             self._lock.release()
             if on_done:
                 on_done()
@@ -93,11 +91,13 @@ class CloudSync:
         return remotes
 
     def _export_notes_by_folder(self):
-        """Write every note out as a .txt file under a temp dir laid out as
-        <folder>/<note>.txt, mirroring the app's own folders. Notes whose
-        folder doesn't exist (or every note, if there are no folders at
-        all) go under ALL_NOTES_FOLDER instead."""
-        tmp_dir = tempfile.mkdtemp(prefix='notes-export-')
+        """Regenerate ~/Notes/folders (a sibling of notes.db) laid out as
+        <folder>/<note>.txt, mirroring the app's own folders, and return its
+        path. Notes whose folder doesn't exist (or every note, if there are
+        no folders at all) go under ALL_NOTES_FOLDER instead. This is the
+        local, human-readable copy of your notes, and also what gets pushed
+        out to each cloud remote."""
+        export_root = os.path.join(os.path.dirname(self.db_path), EXPORT_SUBDIR)
         try:
             con = sqlite3.connect(f'file:{quote(self.db_path)}?mode=ro', uri=True)
             con.row_factory = sqlite3.Row
@@ -105,16 +105,17 @@ class CloudSync:
             notes = con.execute('SELECT id, title, content, folder FROM notes').fetchall()
             con.close()
         except sqlite3.Error:
-            return tmp_dir
+            return export_root if os.path.isdir(export_root) else None
 
+        shutil.rmtree(export_root, ignore_errors=True)
         for note in notes:
             folder = note['folder'] if note['folder'] in folder_names else ALL_NOTES_FOLDER
-            folder_dir = os.path.join(tmp_dir, self._safe_name(folder))
+            folder_dir = os.path.join(export_root, self._safe_name(folder))
             os.makedirs(folder_dir, exist_ok=True)
             filename = f"{note['id']:04d} - {self._safe_name(note['title'] or 'New Note')}.txt"
             with open(os.path.join(folder_dir, filename), 'w', encoding='utf-8') as f:
                 f.write(note['content'] or '')
-        return tmp_dir
+        return export_root
 
     @staticmethod
     def _safe_name(name):
@@ -138,6 +139,8 @@ class CloudSync:
             )
             if result.returncode != 0:
                 return False
+            if not export_dir:
+                return True
             folders_result = subprocess.run(
                 ['rclone', 'sync', export_dir,
                  f'{remote_name}:{REMOTE_SUBDIR}/{EXPORT_SUBDIR}', '--timeout', '45s'],
