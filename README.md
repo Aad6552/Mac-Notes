@@ -1,4 +1,4 @@
-# Mac Notes
+# Nexon Notes
 
 A simple, native-feeling notes app for macOS, built with PyQt6. Notes are
 organized into folders, auto-save as you type, and are stored locally in a
@@ -12,8 +12,8 @@ SQLite database.
 ## Quick start
 
 ```bash
-git clone <this-repo> mac-notes
-cd mac-notes
+git clone <this-repo> nexon-notes
+cd nexon-notes
 ./run.sh
 ```
 
@@ -35,13 +35,13 @@ macOS only. Run the installer:
 ./install.sh
 ```
 
-This installs Mac Notes for your user account by:
+This installs Nexon Notes for your user account by:
 
 - installing [rclone](https://rclone.org) via Homebrew if it isn't already
   on `$PATH` (needed for cloud backup; skipped with a warning if Homebrew
   itself isn't installed)
-- copying this app folder to `~/Library/Application Support/Mac Notes`
-- building `Mac Notes.app` and moving it into `/Applications`, wrapping
+- copying this app folder to `~/Library/Application Support/Nexon Notes`
+- building `Nexon Notes.app` and moving it into `/Applications`, wrapping
   `run.sh` with a proper icon and `Info.plist`
 
 The original project folder is not deleted or moved. It is copied into the
@@ -51,7 +51,7 @@ Moving the built app into `/Applications` normally doesn't require a
 password on admin accounts; if your account can't write there directly, the
 installer falls back to `sudo` and will prompt for your password.
 
-Press <kbd>Cmd</kbd>+<kbd>Space</kbd> and type "Mac Notes" — it should
+Press <kbd>Cmd</kbd>+<kbd>Space</kbd> and type "Nexon Notes" — it should
 appear in Spotlight/Launchpad. If it doesn't show up right away, log out and
 back in.
 
@@ -61,8 +61,8 @@ checkout. It resyncs the installed copy and rebuilds the app bundle.
 To uninstall:
 
 ```bash
-sudo rm -rf /Applications/"Mac Notes.app"
-rm -rf ~/Library/"Application Support"/"Mac Notes"
+sudo rm -rf /Applications/"Nexon Notes.app"
+rm -rf ~/Library/"Application Support"/"Nexon Notes"
 ```
 
 ## Building a standalone binary
@@ -71,16 +71,16 @@ rm -rf ~/Library/"Application Support"/"Mac Notes"
 bin/build-macos.sh
 ```
 
-Freezes the app with PyInstaller into a self-contained `Mac Notes.app` (no
+Freezes the app with PyInstaller into a self-contained `Nexon Notes.app` (no
 Python/PyQt6 install required on the target machine) and wraps it in a
-drag-to-install `dist/Mac-Notes-<version>.dmg`. Must be run on macOS.
+drag-to-install `dist/Nexon-Notes-<version>.dmg`. Must be run on macOS.
 
 The build is unsigned and not notarized — on first launch, right-click the
 app and choose "Open" to get past Gatekeeper's warning.
 
 ## Cloud backup
 
-Mac Notes can back up `notes.db` to **Proton Drive**, **Microsoft
+Nexon Notes can back up `notes.db` to **Proton Drive**, **Microsoft
 OneDrive**, **Google Drive**, and/or **Dropbox**. Click **☁ Manage Cloud
 Accounts…** at the bottom of the sidebar to sign in:
 
@@ -113,7 +113,7 @@ in-app dialog — either way ends up creating the same kind of rclone remote.
 ## Project layout
 
 ```
-mac_notes.py             Main PyQt6 application (this is what run.sh launches)
+nexon_notes.py             Main PyQt6 application (this is what run.sh launches)
 notes_db.py              Shared SQLite layer (~/Notes/notes.db) used by the app and the API
 cloud_sync.py            Background rclone backup to Proton Drive/OneDrive/Google Drive/Dropbox
 cloud_login.py           In-app sign-in — creates the rclone remotes cloud_sync.py uses
@@ -141,9 +141,9 @@ with `./run_api.sh`; see the comments at the top of `app.py` for details.
 - **PyQt6 fails to install**: make sure Xcode Command Line Tools are
   installed (`xcode-select --install`), then delete `.venv/` and re-run
   `./run.sh`.
-- **"Mac Notes" is damaged / can't be opened / unidentified developer**:
+- **"Nexon Notes" is damaged / can't be opened / unidentified developer**:
   the app is unsigned. Right-click it and choose "Open" instead of
   double-clicking, then confirm in the dialog that appears.
 - **App doesn't appear in Spotlight after installing**: double-check
-  `/Applications/Mac Notes.app` exists, then log out and back in (or run
-  `mdimport /Applications/"Mac Notes.app"`).
+  `/Applications/Nexon Notes.app` exists, then log out and back in (or run
+  `mdimport /Applications/"Nexon Notes.app"`).

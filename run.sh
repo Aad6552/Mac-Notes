@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Mac Notes — native desktop app launcher
+# Nexon Notes — native desktop app launcher
 set -e
 cd "$(dirname "$0")"
 
@@ -17,7 +17,7 @@ python3 -c "from PyQt6 import QtWidgets" 2>/dev/null || {
   pip install --quiet PyQt6
 }
 
-# macOS only: lets the app rename its menu-bar entry from "Python" to "Mac Notes"
+# macOS only: lets the app rename its menu-bar entry from "Python" to "Nexon Notes"
 if [ "$(uname)" = "Darwin" ]; then
   python3 -c "import Foundation" 2>/dev/null || {
     echo "Installing pyobjc-framework-Cocoa…"
@@ -25,4 +25,4 @@ if [ "$(uname)" = "Darwin" ]; then
   }
 fi
 
-python3 mac_notes.py
+python3 nexon_notes.py

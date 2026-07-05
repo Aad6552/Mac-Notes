@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Mac Notes — REST API launcher (reads/writes the same ~/Notes/notes.db
+# Nexon Notes — REST API launcher (reads/writes the same ~/Notes/notes.db
 # as the desktop app)
 set -e
 cd "$(dirname "$0")"

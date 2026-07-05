@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Mac Notes — Native desktop app (PyQt6)"""
+"""Nexon Notes — Native desktop app (PyQt6)"""
 
 import sys
 import os
@@ -309,7 +309,7 @@ class MainWindow(QMainWindow):
         self._update_signal.failed.connect(self._on_update_check_failed)
         QTimer.singleShot(4000, self._check_for_updates)
 
-        self.setWindowTitle(f'Mac Notes v{APP_VERSION}' if APP_VERSION else 'Mac Notes')
+        self.setWindowTitle(f'Nexon Notes v{APP_VERSION}' if APP_VERSION else 'Nexon Notes')
         self.resize(1160, 760)
 
         logo_pix = QPixmap(LOGO_PATH)
@@ -382,7 +382,7 @@ class MainWindow(QMainWindow):
         # On macOS Qt relocates About / app-specific items into the
         # application menu; on Linux/Windows they stay under Help.
         help_menu = mb.addMenu('&Help')
-        act(help_menu, 'About Mac Notes', self._show_about,
+        act(help_menu, 'About Nexon Notes', self._show_about,
             role=QAction.MenuRole.AboutRole)
         act(help_menu, 'Check for Updates…', lambda: self._check_for_updates(manual=True),
             role=QAction.MenuRole.ApplicationSpecificRole)
@@ -420,7 +420,7 @@ class MainWindow(QMainWindow):
         name_col = QVBoxLayout()
         name_col.setContentsMargins(0, 0, 0, 0)
         name_col.setSpacing(0)
-        name = QLabel('Mac Notes')
+        name = QLabel('Nexon Notes')
         name.setObjectName('brand-name')
         name_col.addWidget(name)
         if APP_VERSION:
@@ -786,7 +786,7 @@ class MainWindow(QMainWindow):
     def _on_update_up_to_date(self):
         QMessageBox.information(
             self, 'Check for Updates',
-            f'You are up to date.\nMac Notes v{APP_VERSION} is the latest version.',
+            f'You are up to date.\nNexon Notes v{APP_VERSION} is the latest version.',
         )
 
     def _on_update_check_failed(self):
@@ -798,7 +798,7 @@ class MainWindow(QMainWindow):
 
     def _show_about(self):
         box = QMessageBox(self)
-        box.setWindowTitle('About Mac Notes')
+        box.setWindowTitle('About Nexon Notes')
         logo_pix = QPixmap(LOGO_PATH)
         if not logo_pix.isNull():
             box.setIconPixmap(logo_pix.scaled(
@@ -806,13 +806,13 @@ class MainWindow(QMainWindow):
                 Qt.AspectRatioMode.KeepAspectRatio,
                 Qt.TransformationMode.SmoothTransformation,
             ))
-        box.setText(f'<b>Mac Notes</b><br>Version {APP_VERSION or "unknown"}')
+        box.setText(f'<b>Nexon Notes</b><br>Version {APP_VERSION or "unknown"}')
         box.setInformativeText(
             'A simple, native-feeling notes app.<br>'
             'Notes are stored locally in SQLite with optional cloud backup '
             'via rclone.<br><br>'
-            '<a href="https://github.com/Aad6552/Mac-Notes">'
-            'github.com/Aad6552/Mac-Notes</a>'
+            '<a href="https://github.com/Aad6552/Nexon-Notes">'
+            'github.com/Aad6552/Nexon-Notes</a>'
         )
         box.exec()
 
@@ -820,7 +820,7 @@ class MainWindow(QMainWindow):
         box = QMessageBox(self)
         box.setWindowTitle('Update Available')
         box.setText(
-            f'A new version of Mac Notes is available: v{latest_version}\n'
+            f'A new version of Nexon Notes is available: v{latest_version}\n'
             f'(you have v{APP_VERSION}).'
         )
         update_btn = box.addButton('Update', QMessageBox.ButtonRole.AcceptRole)
@@ -833,7 +833,7 @@ class MainWindow(QMainWindow):
         subprocess.Popen(['bash', GET_LATEST_RELEASE_SCRIPT])
         QMessageBox.information(
             self, 'Updating',
-            'Mac Notes is downloading the update and will now close.\n'
+            'Nexon Notes is downloading the update and will now close.\n'
             'Reopen it once the update finishes.',
         )
         QApplication.quit()
@@ -1121,8 +1121,8 @@ def _fix_macos_app_name():
         return
     info = bundle.localizedInfoDictionary() or bundle.infoDictionary()
     if info is not None:
-        info['CFBundleName'] = 'Mac Notes'
-        info['CFBundleDisplayName'] = 'Mac Notes'
+        info['CFBundleName'] = 'Nexon Notes'
+        info['CFBundleDisplayName'] = 'Nexon Notes'
 
 
 def _acquire_single_instance_lock():
@@ -1131,7 +1131,7 @@ def _acquire_single_instance_lock():
     with a confusing port-already-in-use error instead of a clear message."""
     global _lock_file
     os.makedirs(NOTES_DIR, exist_ok=True)
-    _lock_file = open(os.path.join(NOTES_DIR, '.mac-notes.lock'), 'w')
+    _lock_file = open(os.path.join(NOTES_DIR, '.nexon-notes.lock'), 'w')
     try:
         fcntl.flock(_lock_file, fcntl.LOCK_EX | fcntl.LOCK_NB)
         return True
@@ -1142,8 +1142,8 @@ def _acquire_single_instance_lock():
 def main():
     _fix_macos_app_name()
     app = QApplication(sys.argv)
-    app.setApplicationName('Mac Notes')
-    app.setApplicationDisplayName('Mac Notes')
+    app.setApplicationName('Nexon Notes')
+    app.setApplicationDisplayName('Nexon Notes')
     app.setApplicationVersion(APP_VERSION)
     app.setStyleSheet(STYLE)
 
@@ -1153,8 +1153,8 @@ def main():
 
     if not _acquire_single_instance_lock():
         QMessageBox.warning(
-            None, 'Mac Notes',
-            'Mac Notes is already running.\n\n'
+            None, 'Nexon Notes',
+            'Nexon Notes is already running.\n\n'
             'Check your other windows/Activities — a second copy '
             "can't safely share the same notes.",
         )

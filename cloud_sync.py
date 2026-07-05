@@ -1,4 +1,4 @@
-"""Background cloud backup for Mac Notes.
+"""Background cloud backup for Nexon Notes.
 
 Uses whatever rclone remotes the user has configured (`rclone config`) to
 copy notes.db to Proton Drive, Microsoft OneDrive, Google Drive, and/or

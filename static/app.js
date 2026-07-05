@@ -1,4 +1,4 @@
-/* Mac Notes — Frontend */
+/* Nexon Notes — Frontend */
 (() => {
   'use strict';
 

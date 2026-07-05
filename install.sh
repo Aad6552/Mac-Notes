@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Installs Mac Notes for the current user (macOS and Linux):
+# Installs Nexon Notes for the current user (macOS and Linux):
 #   - installs rclone if it isn't already on $PATH (used for cloud backup)
 #   - copies the app into a per-user app directory
-#   - macOS: registers a Mac Notes.app launcher in /Applications
+#   - macOS: registers a Nexon Notes.app launcher in /Applications
 #     (Spotlight/Launchpad)
 #   - Linux: registers a .desktop launcher in ~/.local/share/applications
 #     (app grid / activities search)
@@ -18,12 +18,12 @@ SRC_DIR="$(cd "$(dirname "$0")" && pwd)"
 VERSION="$(tr -d '[:space:]' < "$SRC_DIR/VERSION" 2>/dev/null || echo "1.0.0")"
 
 if [[ "$OS" == "Darwin" ]]; then
-  INSTALL_DIR="$HOME/Library/Application Support/Mac Notes"
-  APP_BUNDLE="/Applications/Mac Notes.app"
+  INSTALL_DIR="$HOME/Library/Application Support/Nexon Notes"
+  APP_BUNDLE="/Applications/Nexon Notes.app"
 else
-  INSTALL_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/mac-notes"
+  INSTALL_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/nexon-notes"
   DESKTOP_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/applications"
-  DESKTOP_FILE="$DESKTOP_DIR/mac-notes.desktop"
+  DESKTOP_FILE="$DESKTOP_DIR/nexon-notes.desktop"
 fi
 
 # --- Linux: system packages run.sh needs to build its venv / run Qt ----------
@@ -78,26 +78,26 @@ if [[ "$OS" == "Linux" ]]; then
   cat > "$DESKTOP_FILE" <<EOF
 [Desktop Entry]
 Type=Application
-Name=Mac Notes
+Name=Nexon Notes
 Comment=Simple notes app with folders and cloud backup
 Exec="$INSTALL_DIR/run.sh"
 Icon=$INSTALL_DIR/assets/logo.png
 Terminal=false
 Categories=Utility;Office;
-StartupWMClass=Mac Notes
+StartupWMClass=Nexon Notes
 EOF
   chmod 644 "$DESKTOP_FILE"
   command -v update-desktop-database >/dev/null 2>&1 && \
     update-desktop-database "$DESKTOP_DIR" 2>/dev/null || true
 
-  echo "Installed Mac Notes to $INSTALL_DIR"
+  echo "Installed Nexon Notes to $INSTALL_DIR"
   echo "Launcher installed at $DESKTOP_FILE"
-  echo "Look for \"Mac Notes\" in your app grid (log out and back in if it doesn't show up right away)."
+  echo "Look for \"Nexon Notes\" in your app grid (log out and back in if it doesn't show up right away)."
   exit 0
 fi
 
 # =============================================================================
-# macOS: build a Mac Notes.app bundle in /Applications
+# macOS: build a Nexon Notes.app bundle in /Applications
 # =============================================================================
 
 # --- build the .app icon from assets/logo.png -------------------------------
@@ -112,14 +112,14 @@ iconutil -c icns "$ICONSET" -o "$INSTALL_DIR/assets/AppIcon.icns"
 rm -rf "$(dirname "$ICONSET")"
 
 # --- wrap run.sh in a minimal .app bundle so macOS treats it as a real app --
-STAGE_BUNDLE="$(mktemp -d)/Mac Notes.app"
+STAGE_BUNDLE="$(mktemp -d)/Nexon Notes.app"
 mkdir -p "$STAGE_BUNDLE/Contents/MacOS" "$STAGE_BUNDLE/Contents/Resources"
 
-cat > "$STAGE_BUNDLE/Contents/MacOS/mac-notes" <<EOF
+cat > "$STAGE_BUNDLE/Contents/MacOS/nexon-notes" <<EOF
 #!/usr/bin/env bash
 exec "$INSTALL_DIR/run.sh"
 EOF
-chmod +x "$STAGE_BUNDLE/Contents/MacOS/mac-notes"
+chmod +x "$STAGE_BUNDLE/Contents/MacOS/nexon-notes"
 
 cp "$INSTALL_DIR/assets/AppIcon.icns" "$STAGE_BUNDLE/Contents/Resources/AppIcon.icns"
 
@@ -129,17 +129,17 @@ cat > "$STAGE_BUNDLE/Contents/Info.plist" <<EOF
 <plist version="1.0">
 <dict>
   <key>CFBundleName</key>
-  <string>Mac Notes</string>
+  <string>Nexon Notes</string>
   <key>CFBundleDisplayName</key>
-  <string>Mac Notes</string>
+  <string>Nexon Notes</string>
   <key>CFBundleIdentifier</key>
-  <string>com.macnotes.app</string>
+  <string>com.nexonnotes.app</string>
   <key>CFBundleVersion</key>
   <string>$VERSION</string>
   <key>CFBundlePackageType</key>
   <string>APPL</string>
   <key>CFBundleExecutable</key>
-  <string>mac-notes</string>
+  <string>nexon-notes</string>
   <key>CFBundleIconFile</key>
   <string>AppIcon</string>
   <key>NSHighResolutionCapable</key>
@@ -160,6 +160,6 @@ else
 fi
 rm -rf "$(dirname "$STAGE_BUNDLE")"
 
-echo "Installed Mac Notes to $INSTALL_DIR"
+echo "Installed Nexon Notes to $INSTALL_DIR"
 echo "Launcher installed at $APP_BUNDLE"
-echo "Look for \"Mac Notes\" in Spotlight/Launchpad (log out and back in if it doesn't show up right away)."
+echo "Look for \"Nexon Notes\" in Spotlight/Launchpad (log out and back in if it doesn't show up right away)."

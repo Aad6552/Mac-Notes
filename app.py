@@ -1,7 +1,7 @@
-"""Mac Notes — web UI + REST API.
+"""Nexon Notes — web UI + REST API.
 
 Serves the browser frontend (templates/index.html, static/) and a JSON API,
-both over the same ~/Notes/notes.db the PyQt6 desktop app (mac_notes.py)
+both over the same ~/Notes/notes.db the PyQt6 desktop app (nexon_notes.py)
 reads and writes, via the shared notes_db.DB layer. Notes created or edited
 here show up in the desktop app and vice versa.
 
@@ -103,6 +103,6 @@ def search():
 
 
 if __name__ == '__main__':
-    print('\n  Mac Notes API running at http://127.0.0.1:5001')
+    print('\n  Nexon Notes API running at http://127.0.0.1:5001')
     print('  Reading/writing the same database as the desktop app: ~/Notes/notes.db\n')
     app.run(debug=False, port=5001, host='127.0.0.1')

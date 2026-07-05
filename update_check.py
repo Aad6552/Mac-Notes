@@ -1,4 +1,4 @@
-"""Background check for a newer release of Mac Notes on GitHub."""
+"""Background check for a newer release of Nexon Notes on GitHub."""
 
 import json
 import threading
@@ -7,7 +7,7 @@ import urllib.request
 
 from PyQt6.QtCore import QObject, pyqtSignal
 
-GITHUB_REPO = 'Aad6552/Mac-Notes'
+GITHUB_REPO = 'Aad6552/Nexon-Notes'
 REQUEST_TIMEOUT = 5  # seconds
 
 

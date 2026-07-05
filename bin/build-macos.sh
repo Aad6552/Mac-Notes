@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Builds an installable macOS binary of Mac Notes.
+# Builds an installable macOS binary of Nexon Notes.
 #
-# Bundles mac_notes.py and its dependencies into a standalone Mac Notes.app
+# Bundles nexon_notes.py and its dependencies into a standalone Nexon Notes.app
 # with PyInstaller, then wraps that .app in a .dmg you can drag into
 # /Applications. Cloud backup still relies on the `rclone` CLI being on
 # $PATH at runtime (same as running from source) — install it separately
@@ -14,17 +14,17 @@
 # block it — right-click the app, choose "Open", then confirm.
 #
 # Usage: bin/build-macos.sh
-# Output: dist/Mac Notes-<version>.dmg
+# Output: dist/Nexon Notes-<version>.dmg
 set -e
 
 cd "$(dirname "$0")/.."
 
 VERSION="$(tr -d '[:space:]' < VERSION)"
-APP_NAME="Mac Notes"
+APP_NAME="Nexon Notes"
 DIST_DIR="dist"
 BUILD_DIR=".build"
 DMG_STAGE="$BUILD_DIR/dmg-stage"
-DMG_PATH="$DIST_DIR/Mac-Notes-${VERSION}.dmg"
+DMG_PATH="$DIST_DIR/Nexon-Notes-${VERSION}.dmg"
 
 echo "Building ${APP_NAME} v${VERSION} for macOS..."
 
@@ -53,12 +53,12 @@ iconutil -c icns "$ICONSET" -o "$BUILD_DIR/AppIcon.icns"
 pyinstaller --noconfirm --clean --onefile --windowed \
   --name "$APP_NAME" \
   --icon "$(pwd)/$BUILD_DIR/AppIcon.icns" \
-  --osx-bundle-identifier "com.macnotes.app" \
+  --osx-bundle-identifier "com.nexonnotes.app" \
   --distpath "$DIST_DIR" \
   --workpath "$BUILD_DIR/work" \
   --specpath "$BUILD_DIR/work" \
   --add-data "$(pwd)/assets/logo.png:assets" \
-  mac_notes.py
+  nexon_notes.py
 
 # --- wrap the .app in a drag-to-install .dmg --------------------------------
 mkdir -p "$DMG_STAGE"
