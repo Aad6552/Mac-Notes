@@ -834,7 +834,7 @@ class MainWindow(QMainWindow):
         QMessageBox.information(
             self, 'Updating',
             'Nexon Notes is downloading the update and will now close.\n'
-            'Reopen it once the update finishes.',
+            'It will reopen automatically once the update finishes.',
         )
         QApplication.quit()
 

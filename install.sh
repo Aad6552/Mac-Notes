@@ -97,6 +97,10 @@ EOF
   echo "Installed Nexon Notes to $INSTALL_DIR"
   echo "Launcher installed at $DESKTOP_FILE"
   echo "Look for \"Nexon Notes\" in your app grid (log out and back in if it doesn't show up right away)."
+
+  echo "Launching Nexon Notes..."
+  nohup "$INSTALL_DIR/run.sh" >/dev/null 2>&1 &
+  disown
   exit 0
 fi
 
@@ -180,3 +184,6 @@ rm -rf "$(dirname "$STAGE_BUNDLE")"
 echo "Installed Nexon Notes to $APP_BUNDLE"
 echo "Launcher installed at $APP_BUNDLE"
 echo "Look for \"Nexon Notes\" in Spotlight/Launchpad (log out and back in if it doesn't show up right away)."
+
+echo "Launching Nexon Notes..."
+open "$APP_BUNDLE"
