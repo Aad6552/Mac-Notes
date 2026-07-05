@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # Installs Nexon Notes for the current user (macOS and Linux):
 #   - installs rclone if it isn't already on $PATH (used for cloud backup)
-#   - copies the app into a per-user app directory
-#   - macOS: registers a Nexon Notes.app launcher in /Applications
+#   - macOS: builds a self-contained Nexon Notes.app in /Applications
 #     (Spotlight/Launchpad)
-#   - Linux: registers a .desktop launcher in ~/.local/share/applications
+#   - Linux: copies the app into a per-user app directory and registers
+#     a .desktop launcher in ~/.local/share/applications
 #     (app grid / activities search)
 set -e
 
@@ -18,7 +18,6 @@ SRC_DIR="$(cd "$(dirname "$0")" && pwd)"
 VERSION="$(tr -d '[:space:]' < "$SRC_DIR/VERSION" 2>/dev/null || echo "1.0.0")"
 
 if [[ "$OS" == "Darwin" ]]; then
-  INSTALL_DIR="$HOME/Library/Application Support/Nexon Notes"
   APP_BUNDLE="/Applications/Nexon Notes.app"
 else
   # Deliberately not honoring $XDG_DATA_HOME: terminals spawned inside
@@ -64,20 +63,21 @@ if ! command -v rclone >/dev/null 2>&1; then
   fi
 fi
 
-mkdir -p "$INSTALL_DIR"
-
-rsync -a --delete \
-  --exclude '.venv' \
-  --exclude '__pycache__' \
-  --exclude '.git' \
-  "$SRC_DIR"/ "$INSTALL_DIR"/
-
-chmod +x "$INSTALL_DIR/run.sh"
-
 # =============================================================================
-# Linux: register a .desktop launcher and finish
+# Linux: copy the app into a per-user directory, register a .desktop
+# launcher, and finish
 # =============================================================================
 if [[ "$OS" == "Linux" ]]; then
+  mkdir -p "$INSTALL_DIR"
+
+  rsync -a --delete \
+    --exclude '.venv' \
+    --exclude '__pycache__' \
+    --exclude '.git' \
+    "$SRC_DIR"/ "$INSTALL_DIR"/
+
+  chmod +x "$INSTALL_DIR/run.sh"
+
   mkdir -p "$DESKTOP_DIR"
   cat > "$DESKTOP_FILE" <<EOF
 [Desktop Entry]
@@ -101,8 +101,23 @@ EOF
 fi
 
 # =============================================================================
-# macOS: build a Nexon Notes.app bundle in /Applications
+# macOS: build a self-contained Nexon Notes.app bundle in /Applications
 # =============================================================================
+
+STAGE_BUNDLE="$(mktemp -d)/Nexon Notes.app"
+APP_SRC_DIR="$STAGE_BUNDLE/Contents/Resources/app"
+mkdir -p "$STAGE_BUNDLE/Contents/MacOS" "$APP_SRC_DIR"
+
+# --- copy the app source into the bundle itself, so the whole install lives
+# under /Applications instead of being split across ~/Library/Application
+# Support and /Applications ------------------------------------------------
+rsync -a --delete \
+  --exclude '.venv' \
+  --exclude '__pycache__' \
+  --exclude '.git' \
+  "$SRC_DIR"/ "$APP_SRC_DIR"/
+
+chmod +x "$APP_SRC_DIR/run.sh"
 
 # --- build the .app icon from assets/logo.png -------------------------------
 ICONSET="$(mktemp -d)/AppIcon.iconset"
@@ -112,20 +127,18 @@ for size in 16 32 128 256 512; do
   double=$((size * 2))
   sips -z "$double" "$double" "$SRC_DIR/assets/logo.png" --out "$ICONSET/icon_${size}x${size}@2x.png" >/dev/null
 done
-iconutil -c icns "$ICONSET" -o "$INSTALL_DIR/assets/AppIcon.icns"
+iconutil -c icns "$ICONSET" -o "$STAGE_BUNDLE/Contents/Resources/AppIcon.icns"
 rm -rf "$(dirname "$ICONSET")"
 
 # --- wrap run.sh in a minimal .app bundle so macOS treats it as a real app --
-STAGE_BUNDLE="$(mktemp -d)/Nexon Notes.app"
-mkdir -p "$STAGE_BUNDLE/Contents/MacOS" "$STAGE_BUNDLE/Contents/Resources"
-
-cat > "$STAGE_BUNDLE/Contents/MacOS/nexon-notes" <<EOF
+# Resolved relative to the executable's own location so it keeps working
+# after the bundle is moved/copied into /Applications below.
+cat > "$STAGE_BUNDLE/Contents/MacOS/nexon-notes" <<'EOF'
 #!/usr/bin/env bash
-exec "$INSTALL_DIR/run.sh"
+DIR="$(cd "$(dirname "$0")/../Resources/app" && pwd)"
+exec "$DIR/run.sh"
 EOF
 chmod +x "$STAGE_BUNDLE/Contents/MacOS/nexon-notes"
-
-cp "$INSTALL_DIR/assets/AppIcon.icns" "$STAGE_BUNDLE/Contents/Resources/AppIcon.icns"
 
 cat > "$STAGE_BUNDLE/Contents/Info.plist" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
@@ -164,6 +177,6 @@ else
 fi
 rm -rf "$(dirname "$STAGE_BUNDLE")"
 
-echo "Installed Nexon Notes to $INSTALL_DIR"
+echo "Installed Nexon Notes to $APP_BUNDLE"
 echo "Launcher installed at $APP_BUNDLE"
 echo "Look for \"Nexon Notes\" in Spotlight/Launchpad (log out and back in if it doesn't show up right away)."
