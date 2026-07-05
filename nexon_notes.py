@@ -206,6 +206,7 @@ QMenu {{
     padding: 4px;
 }}
 QMenu::item {{
+    color: #1A1A1A;
     padding: 6px 16px;
     border-radius: 4px;
     font-size: 13px;
@@ -344,6 +345,11 @@ class MainWindow(QMainWindow):
     # ── Menu bar ──────────────────────────────────────────────────────────────
     def _build_menus(self):
         mb = self.menuBar()
+        if sys.platform.startswith('linux'):
+            # Some Linux shells (Ubuntu/Unity's global "app menu" export) render
+            # exported QMenuBar items greyed-out/unresponsive for plain Python
+            # apps. Keeping the menu bar in-window avoids that entirely.
+            mb.setNativeMenuBar(False)
 
         def act(menu, text, slot, shortcut=None, role=None):
             a = QAction(text, self)
@@ -1145,6 +1151,11 @@ def main():
     app.setApplicationName('Nexon Notes')
     app.setApplicationDisplayName('Nexon Notes')
     app.setApplicationVersion(APP_VERSION)
+    # Since we run as "python3 nexon_notes.py" rather than a native binary, the
+    # window's WM_CLASS is "python3" by default, so Linux desktop shells can't
+    # match the running window to nexon-notes.desktop and fall back to a
+    # generic icon/name in the taskbar. This tells them which entry to use.
+    app.setDesktopFileName('nexon-notes')
     app.setStyleSheet(STYLE)
 
     logo_pix = QPixmap(LOGO_PATH)
