@@ -8,7 +8,7 @@ here show up in the desktop app and vice versa.
 Run: ./run_api.sh   (binds to 127.0.0.1:5001, no auth — localhost only)
 """
 
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, send_from_directory
 
 from notes_db import DB
 
@@ -25,6 +25,11 @@ def note_json(row):
 @app.route('/')
 def index():
     return render_template('index.html')
+
+
+@app.route('/assets/<path:filename>')
+def assets(filename):
+    return send_from_directory('assets', filename)
 
 
 @app.route('/api/notes')
