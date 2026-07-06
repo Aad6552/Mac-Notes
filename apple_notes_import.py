@@ -1,10 +1,8 @@
 """One-time import from the macOS Notes app.
 
 Runs an AppleScript against Notes.app (via osascript) that emits
-"<folder><US><plaintext><RS>" records, using the ASCII unit/record separator
-control characters (0x1F/0x1E) as delimiters since those never show up in
-real note text. macOS will prompt for Automation permission ("Nexon Notes
-wants to control Notes") the first time this runs.
+"<folder><US><plaintext><RS>" records. macOS will prompt for Automation
+permission ("Nexon Notes wants to control Notes") the first time this runs.
 
 Walks folders and asks for `plaintext of (every note of f)` in one batched
 Apple Event per folder, rather than one event per note — fetching each
@@ -12,19 +10,26 @@ note's plaintext individually (e.g. via `every note` + a per-note repeat
 loop) is 50-100x slower since each property access on a note is its own
 round trip; batching by folder cut a 1,100-note library from minutes down
 to about 10 seconds in testing.
+
+The unit/record separators are NUL-delimited (not bare 0x1E/0x1F) on
+purpose: a plain ASCII 0x1E/0x1F collided for real on a note containing a
+pasted spreadsheet table that happened to embed those exact control bytes,
+truncating that note and spilling its tail into a phantom folder. A NUL
+byte can't survive inside a Notes.app rich-text body at all, so wrapping
+the separators in NULs makes the delimiters collision-proof.
 """
 
 import re
 import subprocess
 
-UNIT_SEP = '\x1f'
-RECORD_SEP = '\x1e'
+UNIT_SEP = '\x00\x01\x00'
+RECORD_SEP = '\x00\x02\x00'
 IMPORT_TIMEOUT = 120  # seconds
 
 _SCRIPT = '''
 tell application "Notes"
-    set us to (ASCII character 31)
-    set rs to (ASCII character 30)
+    set us to (ASCII character 0) & (ASCII character 1) & (ASCII character 0)
+    set rs to (ASCII character 0) & (ASCII character 2) & (ASCII character 0)
     set out to ""
     repeat with f in (every folder)
         set fname to name of f
@@ -73,6 +78,9 @@ def fetch_notes():
         if not record:
             continue
         folder, _, content = record.partition(UNIT_SEP)
+        # sqlite3 rejects NUL characters in text params outright (raises
+        # ValueError); rich-content notes can carry stray control chars.
+        content = content.replace('\x00', '')
         notes.append({'folder': folder.strip() or 'Notes', 'content': content})
     return notes
 

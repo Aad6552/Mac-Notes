@@ -838,16 +838,24 @@ class MainWindow(QMainWindow):
         self._import_progress.setWindowTitle('Import from Apple Notes')
         self._import_progress.setText('Importing notes…')
         self._import_progress.setStandardButtons(QMessageBox.StandardButton.NoButton)
+        self._import_progress.setWindowModality(Qt.WindowModality.NonModal)
         self._import_progress.show()
 
         def worker():
+            # Broad except is deliberate: this runs unsupervised on a
+            # background thread, and _apply_apple_notes_import does real DB
+            # writes — any exception here (a stray character in note
+            # content, a locked DB, etc.) must still reach the GUI thread so
+            # the progress dialog closes, instead of leaving it stuck
+            # forever with no way for the user to tell what happened.
             try:
                 notes = fetch_notes()
+                count = self._apply_apple_notes_import(notes)
                 error = ''
-            except AppleNotesImportError as e:
-                notes = []
-                error = str(e)
-            count = self._apply_apple_notes_import(notes) if notes else 0
+            except Exception as e:
+                count = 0
+                error = str(e) if isinstance(e, AppleNotesImportError) else \
+                    f'Import failed: {e}'
             self._import_signal.done.emit(count, error)
 
         threading.Thread(target=worker, daemon=True).start()
@@ -860,9 +868,15 @@ class MainWindow(QMainWindow):
             if folder not in existing_folders:
                 self.db.new_folder(folder)
                 existing_folders.add(folder)
-            new_note = self.db.new_note(folder)
-            self.db.save_note(new_note['id'], note['content'])
-            count += 1
+            # One bad note (encoding oddity, embedded control character from
+            # a rich-content note, etc.) shouldn't abort an otherwise-good
+            # import of a thousand-plus notes.
+            try:
+                new_note = self.db.new_note(folder)
+                self.db.save_note(new_note['id'], note['content'])
+                count += 1
+            except Exception:
+                continue
         return count
 
     def _on_apple_notes_import_done(self, count, error):
