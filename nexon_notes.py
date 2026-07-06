@@ -14,7 +14,7 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import Qt, QSize, QTimer, QObject, pyqtSignal
 from PyQt6.QtGui import (
-    QFont, QColor, QIcon, QPixmap, QPainter, QPen,
+    QFont, QColor, QIcon, QPixmap, QPainter, QPen, QCursor,
     QTextCharFormat, QTextCursor, QAction, QKeySequence,
 )
 
@@ -294,10 +294,6 @@ class MainWindow(QMainWindow):
         self._sync_signal = SyncSignal()
         self._sync_signal.finished.connect(self._on_cloud_sync_done)
 
-        self._cloud_timer = QTimer(self)
-        self._cloud_timer.timeout.connect(self._trigger_cloud_sync)
-        self._cloud_timer.start(5000)  # every 5 seconds
-
         self._cloud_debounce_timer = QTimer(self)  # fires a bit after typing settles
         self._cloud_debounce_timer.setSingleShot(True)
         self._cloud_debounce_timer.timeout.connect(self._trigger_cloud_sync)
@@ -345,7 +341,8 @@ class MainWindow(QMainWindow):
     # ── Menu bar ──────────────────────────────────────────────────────────────
     def _build_menus(self):
         mb = self.menuBar()
-        if sys.platform.startswith('linux'):
+        is_linux = sys.platform.startswith('linux')
+        if is_linux:
             # Some Linux shells (Ubuntu/Unity's global "app menu" export) render
             # exported QMenuBar items greyed-out/unresponsive for plain Python
             # apps. Keeping the menu bar in-window avoids that entirely.
@@ -392,6 +389,33 @@ class MainWindow(QMainWindow):
             role=QAction.MenuRole.AboutRole)
         act(help_menu, 'Check for Updates…', lambda: self._check_for_updates(manual=True),
             role=QAction.MenuRole.ApplicationSpecificRole)
+
+        if is_linux:
+            # The in-window menu bar above otherwise sits there permanently,
+            # unlike macOS's native top-of-screen bar. Auto-hide it and only
+            # reveal it while the cursor hovers the top edge of the window,
+            # so it behaves the same way visually as the macOS menu bar does.
+            self._menu_bar = mb
+            mb.setVisible(False)
+            self._menu_reveal_timer = QTimer(self)
+            self._menu_reveal_timer.setInterval(120)
+            self._menu_reveal_timer.timeout.connect(self._update_menu_bar_visibility)
+            self._menu_reveal_timer.start()
+
+    def _update_menu_bar_visibility(self):
+        mb = self._menu_bar
+        if not self.isActiveWindow():
+            mb.setVisible(False)
+            return
+        menu_open = any(a.menu() is not None and a.menu().isVisible() for a in mb.actions())
+        if menu_open:
+            mb.setVisible(True)
+            return
+        pos = self.mapFromGlobal(QCursor.pos())
+        reveal_zone = mb.sizeHint().height() if mb.isVisible() else 6
+        hovering = self.rect().contains(pos) and pos.y() <= reveal_zone
+        if hovering != mb.isVisible():
+            mb.setVisible(hovering)
 
     def _focus_search(self):
         self.search_entry.setFocus()
