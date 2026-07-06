@@ -298,6 +298,14 @@ class MainWindow(QMainWindow):
         self._cloud_debounce_timer.setSingleShot(True)
         self._cloud_debounce_timer.timeout.connect(self._trigger_cloud_sync)
 
+        # Also keep syncing continuously in the background; sync_all_async()
+        # no-ops (via its lock) if a previous pass is still in flight, so this
+        # just means "sync again as soon as possible" rather than overlapping runs.
+        self._cloud_periodic_timer = QTimer(self)
+        self._cloud_periodic_timer.setInterval(2000)
+        self._cloud_periodic_timer.timeout.connect(self._trigger_cloud_sync)
+        self._cloud_periodic_timer.start()
+
         QTimer.singleShot(5000, self._trigger_cloud_sync)  # + once shortly after launch
 
         self._update_signal = UpdateSignal()
