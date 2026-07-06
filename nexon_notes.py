@@ -888,7 +888,14 @@ class MainWindow(QMainWindow):
             self.db.prune_empty_folders()
 
         existing_folders = {f['name'] for f in self.db.folders()}
-        existing_pairs = self.db.imported_folder_content_pairs() if mode == 'merge' else set()
+        # Always dedupe by (folder, content), in both modes — not just
+        # "merge". Wipe's delete_apple_imported_notes() only removes notes
+        # already tagged from_apple_import=1, so it can't do anything about
+        # notes that predate that tracking column (e.g. from an import that
+        # ran before this feature existed); without this check, "wipe"
+        # would then blindly re-insert on top of those untouched leftovers
+        # and double the whole library.
+        existing_pairs = self.db.imported_folder_content_pairs()
         count = 0
         skipped = 0
         for note in notes:
@@ -896,7 +903,7 @@ class MainWindow(QMainWindow):
             if folder not in existing_folders:
                 self.db.new_folder(folder)
                 existing_folders.add(folder)
-            if mode == 'merge' and (folder, note['content']) in existing_pairs:
+            if (folder, note['content']) in existing_pairs:
                 skipped += 1
                 continue
             # One bad note (encoding oddity, embedded control character from
