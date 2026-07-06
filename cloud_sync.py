@@ -44,12 +44,16 @@ class CloudSync:
     def __init__(self, db_path):
         self.db_path = db_path
         self._lock = threading.Lock()
+        self._rerun_requested = False  # a caller arrived while busy; run again right after
         self.status = {}  # label -> {'ok': bool, 'when': str}
 
     def sync_all_async(self, on_done=None):
-        """Kick off a backup pass in the background. No-op if one is
-        already running or rclone isn't installed."""
+        """Kick off a backup pass in the background. If one is already
+        running, remember to run again as soon as it finishes instead of
+        dropping the request — otherwise a manual "Sync Now" click can get
+        silently swallowed by the continuous background sync loop."""
         if not self._lock.acquire(blocking=False):
+            self._rerun_requested = True
             return
         thread = threading.Thread(
             target=self._sync_all, args=(on_done,), daemon=True
@@ -64,10 +68,15 @@ class CloudSync:
             for name, label in self._discover_remotes():
                 ok = self._sync_one(name, export_dir)
                 self.status[label] = {'ok': ok, 'when': time.strftime('%H:%M:%S')}
+                # Report each remote as it finishes rather than waiting on the
+                # whole pass, so the status label doesn't lag behind reality.
+                if on_done:
+                    on_done()
         finally:
             self._lock.release()
-            if on_done:
-                on_done()
+            rerun, self._rerun_requested = self._rerun_requested, False
+        if rerun:
+            self.sync_all_async(on_done=on_done)
 
     def _discover_remotes(self):
         try:
