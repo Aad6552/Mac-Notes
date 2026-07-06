@@ -1,7 +1,7 @@
 """One-time import from the macOS Notes app.
 
 Runs an AppleScript against Notes.app (via osascript) that emits
-"<folder><US><plaintext><RS>" records. macOS will prompt for Automation
+"<folder path><US><plaintext><RS>" records. macOS will prompt for Automation
 permission ("Nexon Notes wants to control Notes") the first time this runs.
 
 Walks folders and asks for `plaintext of (every note of f)` in one batched
@@ -10,6 +10,15 @@ note's plaintext individually (e.g. via `every note` + a per-note repeat
 loop) is 50-100x slower since each property access on a note is its own
 round trip; batching by folder cut a 1,100-note library from minutes down
 to about 10 seconds in testing.
+
+Notes.app folders can be nested (and different accounts can each have a
+folder with the same name, e.g. a "Completed" sub-folder under several
+different parents), but Nexon Notes' own folder model is flat. So each
+folder's full ancestry (up to but not including the account, e.g.
+"TD Synnex Inc. › AI Apps › Maximo") is joined into a single
+path string and used as the flat folder name — this both preserves the
+hierarchy visually and keeps same-named folders under different parents
+from colliding into one.
 
 The unit/record separators are NUL-delimited (not bare 0x1E/0x1F) on
 purpose: a plain ASCII 0x1E/0x1F collided for real on a note containing a
@@ -24,18 +33,31 @@ import subprocess
 
 UNIT_SEP = '\x00\x01\x00'
 RECORD_SEP = '\x00\x02\x00'
+PATH_SEP = ' › '  # visual "parent › child" join for flattened folder paths
 IMPORT_TIMEOUT = 120  # seconds
 
-_SCRIPT = '''
+_SCRIPT = f'''
+on folderPath(f)
+    tell application "Notes"
+        set p to name of f
+        set c to container of f
+        repeat while ((class of c) as string) is "folder"
+            set p to (name of c) & "{PATH_SEP}" & p
+            set c to container of c
+        end repeat
+        return p
+    end tell
+end folderPath
+
 tell application "Notes"
     set us to (ASCII character 0) & (ASCII character 1) & (ASCII character 0)
     set rs to (ASCII character 0) & (ASCII character 2) & (ASCII character 0)
     set out to ""
     repeat with f in (every folder)
-        set fname to name of f
+        set fpath to my folderPath(f)
         set bodies to plaintext of (every note of f)
         repeat with b in bodies
-            set out to out & fname & us & b & rs
+            set out to out & fpath & us & b & rs
         end repeat
     end repeat
     return out

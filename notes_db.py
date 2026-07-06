@@ -45,7 +45,18 @@ class DB:
             for f in ('Notes', 'Personal', 'Work'):
                 self.con.execute('INSERT OR IGNORE INTO folders (name) VALUES (?)', (f,))
             self.con.execute("INSERT INTO meta (key, value) VALUES ('seeded', '1')")
+        self._migrate()
         self.con.commit()
+
+    def _migrate(self):
+        # Tags notes created by "Import from Apple Notes" so a later Wipe &
+        # Re-import can remove exactly those (and only those) without
+        # touching notes typed by hand in Nexon Notes.
+        cols = {r['name'] for r in self.con.execute('PRAGMA table_info(notes)')}
+        if 'from_apple_import' not in cols:
+            self.con.execute(
+                'ALTER TABLE notes ADD COLUMN from_apple_import INTEGER DEFAULT 0'
+            )
 
     def folders(self):
         rows = self.con.execute('SELECT name FROM folders ORDER BY name').fetchall()
@@ -113,6 +124,36 @@ class DB:
             'UPDATE notes SET folder=?,updated=? WHERE id=?',
             (folder, datetime.now().isoformat(), nid)
         )
+        self.con.commit()
+
+    def imported_folder_content_pairs(self):
+        """(folder, content) for every existing note, used by a Merge import
+        to recognize a note it already has and skip re-adding it."""
+        return {(r['folder'], r['content'])
+                for r in self.con.execute('SELECT folder, content FROM notes')}
+
+    def import_apple_note(self, folder, content):
+        lines = [l for l in content.split('\n') if l.strip()]
+        title = (lines[0][:120] if lines else '') or 'New Note'
+        now = datetime.now().isoformat()
+        self.con.execute(
+            'INSERT INTO notes (title,content,folder,created,updated,from_apple_import) '
+            'VALUES (?,?,?,?,?,1)',
+            (title, content, folder, now, now)
+        )
+        self.con.commit()
+
+    def delete_apple_imported_notes(self):
+        """Wipe & Re-import: remove everything a previous Apple Notes import
+        created, leaving hand-typed notes untouched."""
+        self.con.execute('DELETE FROM notes WHERE from_apple_import=1')
+        self.con.commit()
+
+    def prune_empty_folders(self, keep=('Notes', 'Personal', 'Work')):
+        used = {r['folder'] for r in self.con.execute('SELECT DISTINCT folder FROM notes')}
+        for r in self.con.execute('SELECT name FROM folders').fetchall():
+            if r['name'] not in used and r['name'] not in keep:
+                self.con.execute('DELETE FROM folders WHERE name=?', (r['name'],))
         self.con.commit()
 
     def search(self, q):

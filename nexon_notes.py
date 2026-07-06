@@ -225,7 +225,7 @@ class SyncSignal(QObject):
 
 # ── Cross-thread signal for Apple Notes import results ────────────────────────
 class ImportSignal(QObject):
-    done = pyqtSignal(int, str)  # imported count, error message ('' on success)
+    done = pyqtSignal(int, int, str)  # imported count, skipped count, error ('' on success)
 
 
 # ── Note list row widget ──────────────────────────────────────────────────────
@@ -823,15 +823,37 @@ class MainWindow(QMainWindow):
 
     # ── Apple Notes import ───────────────────────────────────────────────────
     def _on_import_apple_notes(self):
-        reply = QMessageBox.question(
-            self, 'Import from Apple Notes',
-            'This copies every note from the Notes app into Nexon Notes, '
-            'matched into folders of the same name (new folders are created '
-            'as needed). Existing notes are left untouched.\n\n'
+        box = QMessageBox(self)
+        box.setWindowTitle('Import from Apple Notes')
+        box.setText(
+            'Copy notes from the Notes app into Nexon Notes, matched into '
+            'folders of the same name (new folders are created as needed).\n\n'
+            'Merge only adds notes you don\'t already have (matched by exact '
+            'folder + content) — safe to run again after adding new notes in '
+            'the Notes app.\n\n'
+            'Wipe & Re-import removes every note a previous Apple Notes '
+            'import created, then imports fresh. Notes you typed by hand in '
+            'Nexon Notes are never touched by either option.\n\n'
             'macOS may ask you to authorize Nexon Notes to control Notes — '
-            'this can take a little while for a large note library. Continue?',
+            'this can take a little while for a large note library.'
         )
-        if reply != QMessageBox.StandardButton.Yes:
+        merge_btn = box.addButton('Merge', QMessageBox.ButtonRole.AcceptRole)
+        wipe_btn = box.addButton('Wipe && Re-import', QMessageBox.ButtonRole.DestructiveRole)
+        box.addButton('Cancel', QMessageBox.ButtonRole.RejectRole)
+        box.exec()
+        clicked = box.clickedButton()
+        if clicked is merge_btn:
+            mode = 'merge'
+        elif clicked is wipe_btn:
+            reply = QMessageBox.question(
+                self, 'Wipe & Re-import',
+                'This removes every note previously imported from Apple '
+                'Notes and re-imports from scratch. Continue?',
+            )
+            if reply != QMessageBox.StandardButton.Yes:
+                return
+            mode = 'wipe'
+        else:
             return
 
         self._import_progress = QMessageBox(self)
@@ -850,45 +872,54 @@ class MainWindow(QMainWindow):
             # forever with no way for the user to tell what happened.
             try:
                 notes = fetch_notes()
-                count = self._apply_apple_notes_import(notes)
+                count, skipped = self._apply_apple_notes_import(notes, mode)
                 error = ''
             except Exception as e:
-                count = 0
+                count, skipped = 0, 0
                 error = str(e) if isinstance(e, AppleNotesImportError) else \
                     f'Import failed: {e}'
-            self._import_signal.done.emit(count, error)
+            self._import_signal.done.emit(count, skipped, error)
 
         threading.Thread(target=worker, daemon=True).start()
 
-    def _apply_apple_notes_import(self, notes):
+    def _apply_apple_notes_import(self, notes, mode):
+        if mode == 'wipe':
+            self.db.delete_apple_imported_notes()
+            self.db.prune_empty_folders()
+
         existing_folders = {f['name'] for f in self.db.folders()}
+        existing_pairs = self.db.imported_folder_content_pairs() if mode == 'merge' else set()
         count = 0
+        skipped = 0
         for note in notes:
             folder = safe_folder_name(note['folder'])
             if folder not in existing_folders:
                 self.db.new_folder(folder)
                 existing_folders.add(folder)
+            if mode == 'merge' and (folder, note['content']) in existing_pairs:
+                skipped += 1
+                continue
             # One bad note (encoding oddity, embedded control character from
             # a rich-content note, etc.) shouldn't abort an otherwise-good
             # import of a thousand-plus notes.
             try:
-                new_note = self.db.new_note(folder)
-                self.db.save_note(new_note['id'], note['content'])
+                self.db.import_apple_note(folder, note['content'])
                 count += 1
             except Exception:
                 continue
-        return count
+        return count, skipped
 
-    def _on_apple_notes_import_done(self, count, error):
+    def _on_apple_notes_import_done(self, count, skipped, error):
         self._import_progress.close()
         if error:
             QMessageBox.warning(self, 'Import from Apple Notes', error)
             return
         self._fill_sidebar()
         self._fill_notes(self.current_folder)
-        QMessageBox.information(
-            self, 'Import from Apple Notes', f'Imported {count} notes.'
-        )
+        msg = f'Imported {count} notes.'
+        if skipped:
+            msg += f' ({skipped} already up to date.)'
+        QMessageBox.information(self, 'Import from Apple Notes', msg)
 
     # ── App updates ───────────────────────────────────────────────────────────
     def _check_for_updates(self, manual=False):
