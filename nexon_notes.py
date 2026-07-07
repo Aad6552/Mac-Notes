@@ -48,6 +48,12 @@ EDITOR_BG = '#FFFEF5'
 
 STYLE = f"""
 QMainWindow, QWidget#root {{ background: {DARK_BG2}; }}
+QStatusBar {{
+    background: {DARK_BG};
+    border-top: 1px solid #180F14;
+    color: #9A8A8F;
+    font-size: 11px;
+}}
 
 /* ── Sidebar ── */
 QWidget#sidebar {{
@@ -941,6 +947,7 @@ class MainWindow(QMainWindow):
 
     # ── App updates ───────────────────────────────────────────────────────────
     def _check_for_updates(self, manual=False):
+        self.statusBar().showMessage('Checking for updates…')
         if manual:
             # Triggered from the menu: report every outcome, not just updates.
             check_for_update_async(
@@ -953,12 +960,14 @@ class MainWindow(QMainWindow):
             check_for_update_async(APP_VERSION, on_available=self._update_signal.available.emit)
 
     def _on_update_up_to_date(self):
+        self.statusBar().showMessage(f'Up to date — v{APP_VERSION}', 5000)
         QMessageBox.information(
             self, 'Check for Updates',
             f'You are up to date.\nNexon Notes v{APP_VERSION} is the latest version.',
         )
 
     def _on_update_check_failed(self):
+        self.statusBar().showMessage('Could not check for updates', 5000)
         QMessageBox.warning(
             self, 'Check for Updates',
             'Could not check for updates.\n'
@@ -986,6 +995,7 @@ class MainWindow(QMainWindow):
         box.exec()
 
     def _on_update_available(self, latest_version):
+        self.statusBar().showMessage(f'Update available — v{latest_version}', 5000)
         box = QMessageBox(self)
         box.setWindowTitle('Update Available')
         box.setText(
@@ -999,6 +1009,7 @@ class MainWindow(QMainWindow):
             self._run_update()
 
     def _run_update(self):
+        self.statusBar().showMessage('Downloading update…')
         subprocess.Popen(['bash', GET_LATEST_RELEASE_SCRIPT])
         QMessageBox.information(
             self, 'Updating',
